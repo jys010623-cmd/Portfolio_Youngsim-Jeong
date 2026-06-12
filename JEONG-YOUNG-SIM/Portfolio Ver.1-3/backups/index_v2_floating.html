@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>star.browser — virtual studio</title>
+<style>
+/* ============================================================
+   DESIGN TOKENS
+   Base: white / silver / soft gray
+   Point: lavender / pale pink / sky blue
+   Texture: glass / translucent / chrome
+============================================================ */
+:root{
+  --white:#ffffff;
+  --paper:#f6f6f8;
+  --silver:#d9dade;
+  --silver-2:#c3c5cc;
+  --gray:#7c7e88;
+  --gray-soft:#a3a5ae;
+  --ink:#15151a;
+  --ink-soft:#33333b;
+  --hair:#0e0e12;
+  --hair-2:#222230;
+  --ivory:#f4efe4;
+  --ivory-2:#e4dbc8;
+
+  --lavender:#cdc4f0;
+  --lavender-deep:#a99ee0;
+  --pink:#f3cdda;
+  --pink-deep:#e9a9c2;
+  --sky:#bfe0f2;
+  --sky-deep:#8fc6e8;
+
+  --chrome-1:#fbfbfd;
+  --chrome-2:#dfe1e7;
+  --chrome-3:#b6b9c4;
+  --chrome-4:#9a9da9;
+
+  --glass:rgba(255,255,255,0.55);
+  --glass-line:rgba(255,255,255,0.7);
+  --shadow-soft:0 8px 30px rgba(40,40,60,0.16);
+  --shadow-pop:0 18px 50px rgba(55,45,85,0.28);
+  --shadow-obj:0 10px 22px rgba(45,42,70,0.22);
+  --radius:18px;
+  --radius-sm:12px;
+  --font:'Segoe UI',-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--font);
+  color:var(--ink);
+  /* calm neutral backdrop so the browser is the hero */
+  background:
+    radial-gradient(1100px 700px at 50% 12%, rgba(205,196,240,0.18), transparent 60%),
+    linear-gradient(160deg,#eceef2,#e2e3e9);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:26px;
+  overflow-x:hidden;
+}
+
+/* soft floating background dots */
+.bg-orbs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.bg-orbs span{position:absolute;border-radius:50%;filter:blur(3px);opacity:.22;animation:drift 16s ease-in-out infinite;}
+.bg-orbs span:nth-child(1){width:90px;height:90px;left:8%;top:18%;background:radial-gradient(circle at 30% 30%,#fff,var(--lavender));animation-delay:0s;}
+.bg-orbs span:nth-child(2){width:60px;height:60px;left:82%;top:62%;background:radial-gradient(circle at 30% 30%,#fff,var(--sky));animation-delay:-4s;}
+.bg-orbs span:nth-child(3){width:46px;height:46px;left:70%;top:14%;background:radial-gradient(circle at 30% 30%,#fff,var(--pink));animation-delay:-8s;}
+@keyframes drift{0%,100%{transform:translateY(0) translateX(0);}50%{transform:translateY(-22px) translateX(10px);}}
+
+/* ============================================================
+   BROWSER WINDOW SHELL
+============================================================ */
+.browser{
+  position:relative;z-index:1;
+  width:min(86vw,1680px);
+  height:min(82vh,1040px);
+  background:linear-gradient(180deg,var(--chrome-1),#eceef3);
+  border-radius:22px;
+  box-shadow:var(--shadow-pop), inset 0 1px 0 rgba(255,255,255,.9);
+  border:1px solid rgba(255,255,255,.6);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+
+/* top chrome bar */
+.top-bar{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 16px;
+  background:linear-gradient(180deg,#f7f8fb,#e7e9f0);
+  border-bottom:1px solid var(--silver);
+}
+.traffic{display:flex;gap:8px;}
+.traffic i{width:13px;height:13px;border-radius:50%;display:block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+.traffic .r{background:linear-gradient(180deg,#ffa3a3,#f1788a);}
+.traffic .y{background:linear-gradient(180deg,#ffe2a0,#f4c96b);}
+.traffic .g{background:linear-gradient(180deg,#bfeac0,#8fce9a);}
+.nav-btns{display:flex;gap:6px;color:var(--gray);}
+.nav-btns button{
+  border:none;background:rgba(255,255,255,.6);width:28px;height:28px;border-radius:9px;
+  color:var(--gray);cursor:pointer;font-size:14px;line-height:1;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.05);transition:.18s;
+}
+.nav-btns button:hover{background:#fff;color:var(--ink);transform:translateY(-1px);}
+.url-bar{
+  flex:1;display:flex;align-items:center;gap:8px;
+  background:#fff;border-radius:11px;padding:7px 14px;
+  box-shadow:inset 0 0 0 1px var(--silver);
+  font-size:13px;color:var(--ink-soft);min-width:0;
+}
+.url-bar .lock{color:var(--lavender-deep);font-size:12px;}
+.url-bar .addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.url-bar .blink{margin-left:auto;color:var(--gray-soft);font-size:11px;display:flex;align-items:center;gap:6px;}
+.url-bar .blink::before{content:"";width:6px;height:6px;border-radius:50%;background:#8fce9a;animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.tab-row{display:flex;gap:6px;padding:0 14px;background:#e7e9f0;}
+.tab{
+  display:flex;align-items:center;gap:7px;
+  padding:8px 16px;font-size:12px;color:var(--ink-soft);
+  background:linear-gradient(180deg,#fbfbfd,#eef0f5);
+  border-radius:11px 11px 0 0;border:1px solid var(--silver);border-bottom:none;
+  margin-top:6px;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.tab .dot{width:8px;height:8px;border-radius:50%;background:var(--lavender);flex:none;}
+
+/* ============================================================
+   VIEWPORT = VIRTUAL ROOM (no sidebar)
+============================================================ */
+.viewport{flex:1;position:relative;min-height:0;background:
+  radial-gradient(900px 520px at 50% 120%, rgba(205,196,240,.32), transparent 60%),
+  linear-gradient(170deg,#fbfbfd,#eef0f5);
+  overflow:hidden;}
+
+/* the room stage where folders float around the avatar */
+.room{position:absolute;inset:0;z-index:2;}
+
+/* ============================================================
+   VIRTUAL STUDIO BACKGROUND (very subtle ambience)
+============================================================ */
+.studio-bg{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
+/* faint browser/dot grid */
+.studio-bg .grid{position:absolute;inset:0;opacity:.5;
+  background-image:
+    linear-gradient(rgba(120,124,160,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(120,124,160,.06) 1px,transparent 1px);
+  background-size:46px 46px;
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 30%,#000 35%,transparent 78%);
+          mask-image:radial-gradient(120% 90% at 50% 30%,#000 35%,transparent 78%);}
+/* soft studio floor plane + standing shadow band */
+.studio-bg .floor{position:absolute;left:0;right:0;bottom:0;height:34%;
+  background:linear-gradient(180deg,transparent,rgba(205,196,240,.16) 60%,rgba(180,176,210,.22));}
+.studio-bg .floor::after{content:"";position:absolute;left:50%;bottom:5%;transform:translateX(-50%);
+  width:46%;height:34px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(70,64,104,.22),transparent 75%);filter:blur(5px);}
+/* blurred panel shadows drifting */
+.studio-bg .panel{position:absolute;border-radius:22px;filter:blur(16px);opacity:.26;}
+.studio-bg .p1{left:6%;top:20%;width:200px;height:150px;background:linear-gradient(160deg,rgba(255,255,255,.5),rgba(205,196,240,.18));}
+.studio-bg .p2{right:5%;bottom:18%;width:230px;height:160px;background:linear-gradient(160deg,rgba(255,255,255,.45),rgba(191,224,242,.18));}
+/* small translucent CD fragments */
+.studio-bg .cd{position:absolute;width:54px;height:54px;border-radius:50%;opacity:.32;
+  background:conic-gradient(from 0deg,rgba(246,201,222,.7),rgba(196,214,245,.7),rgba(216,205,243,.7),rgba(191,230,240,.7),rgba(246,201,222,.7));
+  -webkit-mask:radial-gradient(circle,transparent 30%,#000 32%);mask:radial-gradient(circle,transparent 30%,#000 32%);
+  filter:blur(.4px);animation:drift 18s ease-in-out infinite;}
+.studio-bg .c1{left:40%;top:62%;animation-delay:-3s;}
+.studio-bg .c2{right:30%;top:30%;width:34px;height:34px;opacity:.24;animation-delay:-9s;}
+/* faint chrome reflection streaks */
+.studio-bg .hl{position:absolute;opacity:.24;filter:blur(8px);border-radius:50%;}
+.studio-bg .h1{left:22%;top:8%;width:240px;height:30px;transform:rotate(-18deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);}
+.studio-bg .h2{right:14%;top:50%;width:180px;height:22px;transform:rotate(12deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);}
+
+/* ============================================================
+   CENTRAL CHARACTER — protagonist
+============================================================ */
+.avatar-stage{
+  position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+  z-index:4;display:flex;flex-direction:column;align-items:center;
+  pointer-events:none;
+}
+/* speech bubble attached above the character */
+.speech{
+  pointer-events:auto;
+  max-width:260px;background:#fff;border:1px solid var(--silver);
+  border-radius:18px;padding:12px 16px;font-size:13px;color:var(--ink-soft);line-height:1.5;
+  box-shadow:var(--shadow-soft);position:relative;margin-bottom:14px;text-align:center;
+  animation:popIn .35s ease;
+}
+.speech::after{content:"";position:absolute;bottom:-7px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-right:1px solid var(--silver);border-bottom:1px solid var(--silver);}
+@keyframes popIn{from{opacity:0;transform:translateY(6px) scale(.97);}to{opacity:1;transform:none;}}
+
+/* soft studio platform under the character */
+.avatar-hero{
+  position:relative;display:flex;flex-direction:column;align-items:center;
+  animation:float 5.5s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.avatar-hero img{
+  height:min(50vh,440px);width:auto;display:block;
+  filter:drop-shadow(0 22px 26px rgba(50,42,80,.28)) contrast(1.06) saturate(1.04);
+  pointer-events:auto;
+}
+/* CSS fallback figure — soft 3D avatar placeholder */
+.avatar-ph{position:relative;width:240px;height:340px;display:none;
+  filter:drop-shadow(0 22px 26px rgba(40,35,70,.26));}
+/* back hair — long black silhouette */
+.avatar-ph .ph-hair{position:absolute;left:50%;transform:translateX(-50%);top:22px;width:158px;height:250px;
+  background:radial-gradient(120% 80% at 30% 18%,#34343f,#15151b 55%,#0e0e12);
+  border-radius:84px 84px 60px 60px;box-shadow:inset 6px 6px 16px rgba(255,255,255,.06);}
+/* face — ivory skin with gentle side shading */
+.avatar-ph .ph-face{position:absolute;left:50%;transform:translateX(-50%);top:52px;width:104px;height:118px;
+  background:radial-gradient(75% 70% at 38% 34%,#fdf2ea,#f2dccd 70%,#e8cdbb);
+  border-radius:54px 54px 60px 60px;box-shadow:inset -8px -6px 14px rgba(180,150,140,.25), inset 6px 4px 10px rgba(255,255,255,.5);}
+/* front hair strands framing the face */
+.avatar-ph .ph-bang{position:absolute;left:50%;transform:translateX(-50%);top:44px;width:118px;height:64px;
+  background:linear-gradient(180deg,#1b1b22,#0e0e12);border-radius:60px 60px 50% 50%;
+  clip-path:polygon(0 0,100% 0,100% 55%,72% 38%,50% 60%,28% 38%,0 55%);}
+.avatar-ph .ph-side{position:absolute;top:60px;width:30px;height:150px;background:linear-gradient(180deg,#1a1a21,#0e0e12);border-radius:18px;}
+.avatar-ph .ph-side.l{left:32px;transform:rotate(4deg);}
+.avatar-ph .ph-side.r{right:32px;transform:rotate(-4deg);}
+/* body — black top with ivory collar, soft shoulders */
+.avatar-ph .ph-body{position:absolute;left:50%;transform:translateX(-50%);bottom:0;width:188px;height:150px;
+  background:linear-gradient(180deg,#23232b,#121217);border-radius:70px 70px 0 0;
+  box-shadow:inset 10px 8px 22px rgba(255,255,255,.07), inset -10px -4px 18px rgba(0,0,0,.4);}
+.avatar-ph .ph-body::before{content:"";position:absolute;top:6px;left:50%;transform:translateX(-50%);width:70px;height:34px;
+  background:linear-gradient(180deg,var(--ivory),var(--ivory-2));border-radius:0 0 40px 40px;}
+/* one tablet held in front */
+.avatar-ph .ph-tablet{position:absolute;left:50%;bottom:30px;transform:translateX(-50%) rotate(-7deg);
+  width:96px;height:64px;border-radius:11px;
+  background:linear-gradient(160deg,#fbfbfd,#cdd0db);border:2px solid #e7e9f0;
+  box-shadow:0 8px 16px rgba(40,35,70,.28), inset 0 1px 0 rgba(255,255,255,.9);z-index:3;}
+.avatar-ph .ph-tablet::after{content:"";position:absolute;inset:7px;border-radius:6px;
+  background:linear-gradient(160deg,#f3effd,#d9cef5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.5);}
+.avatar-floor{
+  width:230px;height:30px;margin-top:-6px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(120,110,160,.30),transparent 75%);
+  filter:blur(2px);
+}
+.avatar-tag{pointer-events:auto;margin-top:6px;font-size:10px;color:var(--gray);background:rgba(255,255,255,.7);border:1px solid var(--silver);border-radius:20px;padding:3px 11px;}
+.avatar-tag b{color:var(--lavender-deep);}
+
+/* ============================================================
+   FLOATING FOLDER OBJECTS (scattered around the character)
+============================================================ */
+.f-obj{
+  position:absolute;transform:translate(-50%,-50%);
+  z-index:3;border:none;background:none;padding:0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  width:128px;outline:none;
+}
+.f-inner{position:relative;animation:floaty var(--dur,6s) ease-in-out infinite;animation-delay:var(--delay,0s);}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(var(--rot,0deg));}50%{transform:translateY(-13px) rotate(var(--rot,0deg));}}
+
+/* glass tray that the object sits on (a soft coaster, not an app icon) */
+.plate{
+  width:112px;height:112px;border-radius:32px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(165deg,rgba(255,255,255,.5),rgba(255,255,255,.18));
+  border:1px solid rgba(255,255,255,.55);
+  box-shadow:var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.8), inset 0 -10px 22px rgba(120,120,150,.08);
+  backdrop-filter:blur(10px);
+  transition:transform .24s cubic-bezier(.2,.8,.3,1.25), box-shadow .24s;
+}
+/* soft contact shadow under the object, on the tray floor */
+.plate::before{
+  content:"";position:absolute;bottom:13px;left:50%;transform:translateX(-50%);
+  width:62px;height:13px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(60,55,90,.26),transparent 75%);
+  filter:blur(2px);z-index:0;
+}
+/* chrome reflection sweep across the glass */
+.plate::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+  background:linear-gradient(125deg,rgba(255,255,255,.75),rgba(255,255,255,0) 40%);
+  z-index:3;
+}
+.f-obj:hover .plate{transform:translateY(-7px) scale(1.05);box-shadow:var(--shadow-pop), inset 0 1px 0 rgba(255,255,255,.95);}
+.f-obj:focus-visible .plate{box-shadow:0 0 0 3px var(--lavender-deep);}
+.f-obj.active .plate{box-shadow:var(--shadow-pop), inset 0 1px 0 rgba(255,255,255,.95);}
+
+/* accent tints — faint, just colours the glass tray */
+.plate.chrome{background:linear-gradient(160deg,rgba(251,251,253,.6),rgba(198,201,212,.32));}
+.plate.lav{background:linear-gradient(160deg,rgba(243,239,253,.6),rgba(205,196,240,.34));}
+.plate.pink{background:linear-gradient(160deg,rgba(253,241,246,.6),rgba(243,205,218,.34));}
+.plate.sky{background:linear-gradient(160deg,rgba(238,248,253,.6),rgba(191,224,242,.34));}
+
+/* folder name label */
+.f-name{
+  font-size:12px;font-weight:600;color:var(--ink);
+  background:rgba(255,255,255,.78);border:1px solid var(--glass-line);
+  border-radius:20px;padding:4px 12px;white-space:nowrap;
+  box-shadow:0 4px 12px rgba(40,40,60,.08);backdrop-filter:blur(4px);
+  transition:.18s;
+}
+.f-obj:hover .f-name{background:#fff;color:var(--lavender-deep);}
+
+/* tiny meta tag floating beside the object (.folder / .app / .case …) */
+.f-meta{
+  position:absolute;top:6px;right:-6px;
+  font-size:8.5px;letter-spacing:.04em;font-family:'SFMono-Regular',ui-monospace,Menlo,Consolas,monospace;
+  color:var(--gray);background:rgba(255,255,255,.62);
+  border:1px solid rgba(255,255,255,.7);border-radius:6px;padding:2px 6px;
+  box-shadow:0 2px 6px rgba(40,40,60,.07);backdrop-filter:blur(3px);
+  opacity:.78;transition:.18s;pointer-events:none;
+}
+.f-obj:hover .f-meta{opacity:1;color:var(--lavender-deep);}
+
+/* ---- object motifs — each reads as a tangible thing ---- */
+.motif{position:relative;z-index:2;}
+
+/* WORKS — CD player: a slim deck with a disc half-ejected */
+.m-disc{width:74px;height:54px;border-radius:9px;
+  background:linear-gradient(165deg,#fbfbfd,#d4d7e0 70%,#bcbfca);
+  box-shadow:var(--shadow-obj), inset 0 1px 0 rgba(255,255,255,.95), inset 0 -3px 6px rgba(110,110,140,.2);}
+/* eject slot */
+.m-disc::before{content:"";position:absolute;left:9px;right:9px;top:11px;height:4px;border-radius:3px;
+  background:linear-gradient(180deg,#9a9da9,#cfd2db);box-shadow:0 1px 0 rgba(255,255,255,.7);}
+/* the disc peeking out the top */
+.m-disc::after{content:"";position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:42px;height:42px;border-radius:50%;
+  background:conic-gradient(from 30deg,#f6c9de,#c4d6f5,#d8cdf3,#bfe6f0,#f3d8e8,#f6c9de);
+  box-shadow:0 4px 10px rgba(40,40,70,.28), inset 0 0 0 1px rgba(255,255,255,.6);}
+.m-disc i{position:absolute;top:-9px;left:50%;transform:translateX(-50%);width:11px;height:11px;border-radius:50%;background:#fff;z-index:3;box-shadow:0 0 0 2px rgba(0,0,0,.06);}
+
+/* ABOUT — transparent handheld device */
+.m-device{width:42px;height:64px;border-radius:13px;
+  background:linear-gradient(160deg,rgba(255,255,255,.95),rgba(205,196,240,.6));
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:var(--shadow-obj), inset 0 2px 6px rgba(255,255,255,.7);}
+.m-device::before{content:"";position:absolute;left:6px;right:6px;top:8px;bottom:13px;border-radius:8px;
+  background:linear-gradient(160deg,rgba(243,239,253,.95),rgba(217,206,245,.85));box-shadow:inset 0 0 0 1px rgba(255,255,255,.6);}
+.m-device::after{content:"";position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:14px;height:4px;border-radius:3px;background:rgba(120,118,150,.45);}
+.m-device i{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 12px 0 -1px #cdc4f0;z-index:3;}
+
+/* UI/UX — small floating browser window */
+.m-win{width:70px;height:54px;border-radius:9px;background:#fff;
+  box-shadow:var(--shadow-obj), inset 0 0 0 1px rgba(120,124,150,.18);overflow:hidden;}
+.m-win::before{content:"";position:absolute;top:0;left:0;right:0;height:15px;
+  background:linear-gradient(180deg,#eef0f6,#dfe2ec);box-shadow:inset 0 -1px 0 rgba(120,124,150,.25);}
+/* traffic lights + a content block grid */
+.m-win::after{content:"";position:absolute;top:5px;left:7px;width:5px;height:5px;border-radius:50%;background:#f1788a;
+  box-shadow:8px 0 0 #f4c96b,16px 0 0 #8fce9a, 0 16px 0 6px #bfe0f2, 0 30px 0 6px #cdc4f0, 30px 16px 0 6px #f3cdda;}
+
+/* BRANDING — silver chrome folder */
+.m-gem{width:68px;height:50px;border-radius:6px 10px 10px 10px;
+  background:linear-gradient(160deg,#ffffff,#d2d5de 55%,#a9adba);
+  box-shadow:var(--shadow-obj), inset 0 1px 0 rgba(255,255,255,.95), inset 0 -4px 8px rgba(110,112,128,.3);}
+/* folder tab */
+.m-gem::before{content:"";position:absolute;top:-7px;left:6px;width:30px;height:11px;border-radius:6px 6px 0 0;
+  background:linear-gradient(160deg,#fbfbfd,#c3c6d2);box-shadow:inset 0 1px 0 rgba(255,255,255,.9);}
+/* chrome highlight band */
+.m-gem::after{content:"";position:absolute;left:0;right:0;top:14px;height:13px;
+  background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0));}
+
+/* E-COMMERCE — shopping bag / package */
+.m-bag{width:50px;height:56px;border-radius:4px 4px 8px 8px;margin-top:7px;
+  background:linear-gradient(160deg,#fdf3f7,#e6c6d6 80%,#d9b3c6);
+  box-shadow:var(--shadow-obj), inset 0 1px 0 rgba(255,255,255,.9);}
+/* handles */
+.m-bag::before{content:"";position:absolute;top:-15px;left:11px;right:11px;height:20px;
+  border:3px solid #d2a9bd;border-bottom:none;border-radius:20px 20px 0 0;background:transparent;}
+/* fold + tape line */
+.m-bag::after{content:"";position:absolute;top:9px;left:0;right:0;height:1px;background:rgba(150,110,130,.35);
+  box-shadow:0 -4px 7px rgba(255,255,255,.6) inset;}
+.m-bag i{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:3px;
+  background:linear-gradient(160deg,#fff,#f0d6e0);box-shadow:0 1px 3px rgba(0,0,0,.12);}
+
+/* PHOTO/VIDEO — transparent camera */
+.m-cam{width:70px;height:48px;border-radius:11px;
+  background:linear-gradient(160deg,rgba(245,251,254,.95),rgba(176,213,237,.7));
+  border:1px solid rgba(255,255,255,.85);
+  box-shadow:var(--shadow-obj), inset 0 2px 6px rgba(255,255,255,.7);}
+/* viewfinder bump */
+.m-cam::before{content:"";position:absolute;top:-7px;left:13px;width:20px;height:9px;border-radius:5px 5px 0 0;
+  background:linear-gradient(160deg,rgba(255,255,255,.9),rgba(176,213,237,.7));border:1px solid rgba(255,255,255,.7);border-bottom:none;}
+/* glass lens */
+.m-cam::after{content:"";position:absolute;top:50%;left:54%;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;
+  background:radial-gradient(circle at 36% 32%,#ffffff,#8fc0e2 70%,#5f93bd);
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.55), 0 2px 5px rgba(0,0,0,.18);}
+.m-cam i{position:absolute;top:9px;left:11px;width:7px;height:7px;border-radius:50%;background:#f3cdda;box-shadow:0 0 5px #f3cdda;z-index:3;}
+
+/* ARCHIVE — cassette tape */
+.m-tape{width:72px;height:48px;border-radius:8px;
+  background:linear-gradient(180deg,#fbfbfd,#dadce4);
+  box-shadow:var(--shadow-obj), inset 0 1px 0 rgba(255,255,255,.95);}
+/* label strip */
+.m-tape::before{content:"";position:absolute;left:8px;right:8px;top:7px;height:9px;border-radius:3px;
+  background:linear-gradient(180deg,#fff,#eef0f5);box-shadow:inset 0 0 0 1px rgba(150,153,170,.3);}
+/* two reels (white hub via layered radial) */
+.m-tape::after{content:"";position:absolute;left:17px;top:24px;width:15px;height:15px;border-radius:50%;
+  background:radial-gradient(circle,#fff 0 28%,#cdc4f0 30% 60%,#a99ee0 62%);}
+.m-tape i{position:absolute;left:39px;top:24px;width:15px;height:15px;border-radius:50%;z-index:3;
+  background:radial-gradient(circle,#fff 0 28%,#cdc4f0 30% 60%,#a99ee0 62%);}
+
+/* CONTACT — retro mail envelope */
+.m-mail{width:68px;height:46px;border-radius:6px;overflow:hidden;
+  background:linear-gradient(160deg,#fdf1f6,#f0c6d6);
+  box-shadow:var(--shadow-obj), inset 0 1px 0 rgba(255,255,255,.9);}
+/* opening flap */
+.m-mail::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);
+  border-left:34px solid transparent;border-right:34px solid transparent;border-top:24px solid rgba(255,255,255,.92);}
+/* side creases */
+.m-mail::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(45deg,transparent 47%,rgba(180,130,155,.3) 49%,transparent 51%),
+             linear-gradient(-45deg,transparent 47%,rgba(180,130,155,.3) 49%,transparent 51%);}
+.m-mail i{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;
+  background:#fff;box-shadow:0 0 0 2px rgba(233,169,194,.55);z-index:3;}
+
+/* ============================================================
+   BOTTOM DESCRIPTION / STATUS PANEL
+============================================================ */
+.desc-panel{
+  display:flex;align-items:center;gap:16px;min-height:62px;
+  padding:13px 24px;
+  border-top:1px solid var(--silver);
+  background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(244,244,248,.92));
+  backdrop-filter:blur(6px);
+}
+.desc-panel .status-pill{
+  display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--lavender-deep);
+  background:#f3effd;border:1px solid var(--lavender);border-radius:20px;padding:5px 11px;flex:none;
+}
+.desc-panel .status-pill .live{width:6px;height:6px;border-radius:50%;background:#8fce9a;animation:pulse 1.6s infinite;}
+.desc-panel .tag{
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--lavender-deep);
+  border:1px solid var(--lavender);border-radius:20px;padding:5px 11px;flex:none;
+}
+.desc-panel .txt{font-size:13px;color:var(--ink-soft);line-height:1.5;min-width:0;}
+.desc-panel .txt strong{color:var(--ink);font-weight:600;}
+
+/* ============================================================
+   POPUP RETRO WINDOWS (folder open)
+============================================================ */
+.win-layer{position:absolute;inset:0;z-index:20;pointer-events:none;}
+.scrim{position:absolute;inset:0;background:rgba(40,40,60,.18);opacity:0;transition:.25s;pointer-events:none;backdrop-filter:blur(1px);}
+.scrim.show{opacity:1;pointer-events:auto;}
+.win{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) scale(.94);
+  width:min(640px,86%);max-height:80%;
+  background:linear-gradient(180deg,var(--chrome-1),#eef0f5);
+  border-radius:18px;border:1px solid var(--glass-line);
+  box-shadow:var(--shadow-pop);
+  opacity:0;pointer-events:none;transition:.26s cubic-bezier(.2,.8,.3,1.1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.win.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+.win.min{transform:translate(-50%,140%) scale(.9);opacity:0;pointer-events:none;}
+.win.max{width:94%;max-height:90%;}
+.win-bar{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  background:linear-gradient(180deg,#f7f8fb,#e7e9f0);border-bottom:1px solid var(--silver);
+  cursor:default;
+}
+.win-bar .dots{display:flex;gap:7px;}
+.win-bar .dots b{width:12px;height:12px;border-radius:50%;display:block;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+.win-bar .dots .c{background:linear-gradient(180deg,#ffa3a3,#f1788a);}
+.win-bar .dots .m{background:linear-gradient(180deg,#ffe2a0,#f4c96b);}
+.win-bar .dots .x{background:linear-gradient(180deg,#bfeac0,#8fce9a);}
+.win-bar .wt{font-size:12px;color:var(--ink-soft);font-weight:600;display:flex;align-items:center;gap:7px;}
+.win-bar .wt .fav{width:14px;height:14px;border-radius:4px;background:linear-gradient(160deg,#e3dcf8,var(--lavender-deep));}
+.win-body{padding:20px;overflow:auto;}
+.win-intro{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.5;}
+
+/* project cards grid */
+.proj-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+
+/* base card */
+.card{
+  position:relative;cursor:pointer;border:none;text-align:left;
+  border-radius:14px;padding:0;overflow:hidden;
+  background:#fff;border:1px solid var(--silver);
+  box-shadow:var(--shadow-soft);transition:.18s;outline:none;
+}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow-pop);}
+.card:focus-visible{box-shadow:0 0 0 3px var(--lavender-deep);}
+.card .thumb{height:96px;position:relative;overflow:hidden;}
+.card .thumb::after{content:"";position:absolute;inset:0;background:linear-gradient(125deg,rgba(255,255,255,.5),transparent 45%);}
+.card .info{padding:11px 13px 13px;}
+.card .info .t{font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card .info .s{font-size:11px;color:var(--gray);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card .badge{position:absolute;top:9px;left:9px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;background:rgba(255,255,255,.85);color:var(--ink-soft);border-radius:20px;padding:3px 8px;z-index:2;}
+
+/* card variant: CD case */
+.thumb.cd{background:linear-gradient(135deg,#e9e3fb,#c9d8f2);}
+.thumb.cd .disc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:74px;height:74px;border-radius:50%;
+  background:conic-gradient(from 0deg,#f6c9de,#c4d6f5,#d8cdf3,#bfe6f0,#f6c9de);box-shadow:0 4px 12px rgba(0,0,0,.18);}
+.thumb.cd .disc::after{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 6px rgba(0,0,0,.08);}
+/* card variant: cassette */
+.thumb.tape{background:linear-gradient(135deg,#fbe1ea,#e8d8f6);}
+.thumb.tape .deck{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:104px;height:58px;border-radius:8px;background:linear-gradient(180deg,#fff,#eee);box-shadow:0 4px 10px rgba(0,0,0,.15);}
+.thumb.tape .deck::before{content:"";position:absolute;left:14px;top:18px;width:18px;height:18px;border-radius:50%;background:#cdc4f0;box-shadow:54px 0 0 #cdc4f0;}
+.thumb.tape .deck::after{content:"";position:absolute;left:12px;top:8px;right:12px;height:5px;border-radius:3px;background:#bbb;}
+/* card variant: chrome shopping bag */
+.thumb.bag{background:linear-gradient(135deg,#dfe2ea,#c3c6d2);}
+.thumb.bag .b{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);width:60px;height:62px;border-radius:4px 4px 8px 8px;background:linear-gradient(160deg,#fbfbfd,#c9ccd6);box-shadow:0 5px 12px rgba(0,0,0,.18);}
+.thumb.bag .b::before{content:"";position:absolute;top:-14px;left:12px;right:12px;height:20px;border:3px solid #b6b9c4;border-bottom:none;border-radius:20px 20px 0 0;}
+/* card variant: browser tab */
+.thumb.tab2{background:linear-gradient(135deg,#dcf0fb,#cfe0f5);}
+.thumb.tab2 .win-mini{position:absolute;left:50%;top:54%;transform:translate(-50%,-50%);width:108px;height:64px;border-radius:8px;background:#fff;box-shadow:0 5px 12px rgba(0,0,0,.15);overflow:hidden;}
+.thumb.tab2 .win-mini::before{content:"";position:absolute;top:0;left:0;right:0;height:14px;background:#e7e9f0;}
+.thumb.tab2 .win-mini::after{content:"";position:absolute;top:22px;left:10px;width:30px;height:30px;border-radius:6px;background:#bfe0f2;box-shadow:40px 0 0 #cdc4f0,0 38px 0 #f3cdda;}
+/* card variant: cosmetic case */
+.thumb.cos{background:linear-gradient(135deg,#fdeef4,#e7e0f8);}
+.thumb.cos .bottle{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:36px;height:58px;border-radius:10px;background:linear-gradient(160deg,rgba(255,255,255,.85),rgba(243,205,218,.7));border:1px solid #fff;box-shadow:0 5px 12px rgba(0,0,0,.12);}
+.thumb.cos .bottle::before{content:"";position:absolute;top:-10px;left:11px;width:14px;height:12px;background:#cdc4f0;border-radius:3px;}
+/* card variant: game cartridge / pixel */
+.thumb.game{background:linear-gradient(135deg,#e3dcf8,#cfeae0);}
+.thumb.game .cart{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:58px;height:64px;border-radius:6px 6px 4px 4px;background:linear-gradient(160deg,#fff,#cdc4f0);box-shadow:0 5px 12px rgba(0,0,0,.15);}
+.thumb.game .cart::before{content:"";position:absolute;top:10px;left:12px;right:12px;height:22px;background:#8a8c95;border-radius:3px;}
+.thumb.game .cart::after{content:"";position:absolute;bottom:8px;left:16px;right:16px;height:6px;background:#f3cdda;border-radius:3px;}
+/* generic folder-doc thumb */
+.thumb.doc{background:linear-gradient(135deg,#eef0f5,#dadde6);}
+.thumb.doc .pg{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:54px;height:66px;background:#fff;border-radius:5px;box-shadow:0 5px 12px rgba(0,0,0,.14);}
+.thumb.doc .pg::before{content:"";position:absolute;top:12px;left:10px;right:10px;height:4px;background:#cdc4f0;border-radius:3px;box-shadow:0 10px 0 #d9dade,0 20px 0 #d9dade;}
+
+/* DETAIL PANEL (inside window, slides over) */
+.detail{
+  position:absolute;inset:0;background:linear-gradient(180deg,#fff,#f4f4f8);
+  transform:translateX(102%);transition:.3s cubic-bezier(.2,.8,.3,1.1);
+  display:flex;flex-direction:column;z-index:5;
+}
+.detail.show{transform:translateX(0);}
+.detail-bar{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--silver);background:linear-gradient(180deg,#f7f8fb,#e7e9f0);}
+.detail-bar button{border:none;background:rgba(255,255,255,.7);border-radius:9px;padding:6px 12px;font-size:12px;color:var(--ink-soft);cursor:pointer;box-shadow:inset 0 0 0 1px var(--silver);}
+.detail-bar button:hover{background:#fff;}
+.detail-body{padding:22px;overflow:auto;}
+.detail-hero{height:150px;border-radius:14px;margin-bottom:18px;position:relative;overflow:hidden;}
+.detail-body h3{font-size:18px;color:var(--ink);margin-bottom:4px;}
+.detail-body .sub{font-size:12px;color:var(--lavender-deep);margin-bottom:16px;}
+.detail-body p{font-size:13px;color:var(--ink-soft);line-height:1.65;margin-bottom:14px;}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.meta-row span{font-size:11px;background:#f1eefc;border:1px solid var(--lavender);color:var(--lavender-deep);border-radius:20px;padding:5px 11px;}
+
+/* contact form inside window */
+.contact-box{display:flex;flex-direction:column;gap:12px;}
+.contact-box .field{display:flex;flex-direction:column;gap:5px;}
+.contact-box label{font-size:11px;color:var(--gray);}
+.contact-box input,.contact-box textarea{
+  border:1px solid var(--silver);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;color:var(--ink);background:#fff;outline:none;
+}
+.contact-box input:focus,.contact-box textarea:focus{border-color:var(--lavender-deep);box-shadow:0 0 0 3px rgba(169,158,224,.25);}
+.contact-box .send{align-self:flex-start;background:linear-gradient(180deg,#cdc4f0,#a99ee0);color:#fff;border:none;border-radius:11px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--shadow-soft);}
+.contact-box .send:hover{filter:brightness(1.04);transform:translateY(-1px);}
+.contact-links{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap;}
+.contact-links a{font-size:12px;color:var(--ink-soft);text-decoration:none;background:#fff;border:1px solid var(--silver);border-radius:20px;padding:7px 14px;transition:.16s;}
+.contact-links a:hover{border-color:var(--lavender);background:#f7f5fd;}
+
+/* about content */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.about-card{background:#fff;border:1px solid var(--silver);border-radius:12px;padding:14px;}
+.about-card h4{font-size:12px;color:var(--lavender-deep);margin-bottom:8px;letter-spacing:.04em;}
+.about-card p{font-size:12px;color:var(--ink-soft);line-height:1.6;}
+.about-card .chips2{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.about-card .chips2 span{font-size:10px;background:#f4f4f8;border-radius:14px;padding:4px 9px;color:var(--gray);}
+
+/* ============================================================
+   LOADING OVERLAY
+============================================================ */
+.loader{
+  position:absolute;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  background:linear-gradient(170deg,#fbfbfd,#eef0f5);transition:.5s;
+}
+.loader.hide{opacity:0;pointer-events:none;}
+.loader .mini-ava{width:110px;height:132px;display:flex;align-items:flex-end;justify-content:center;}
+.loader .mini-ava img{height:128px;width:auto;filter:drop-shadow(0 8px 12px rgba(60,50,90,.18));}
+.loader .bar{width:170px;height:6px;border-radius:6px;background:#e3e4ea;overflow:hidden;}
+.loader .bar i{display:block;height:100%;width:30%;border-radius:6px;background:linear-gradient(90deg,var(--lavender),var(--sky));animation:load 1.4s ease-in-out infinite;}
+@keyframes load{0%{margin-left:-30%;}100%{margin-left:100%;}}
+.loader .lt{font-size:12px;color:var(--gray);}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media(max-width:1024px){
+  .f-obj{width:104px;}
+  .plate{width:88px;height:88px;border-radius:23px;}
+  .avatar-hero img{height:min(40vh,320px);}
+}
+@media(max-width:760px){
+  body{padding:0;}
+  .browser{height:100vh;width:100%;border-radius:0;}
+  .tab-row{display:none;}
+  /* switch room to a stacked layout: avatar on top, folders in a wrap grid */
+  .room{position:relative;inset:auto;display:flex;flex-direction:column;align-items:center;
+    padding:18px 14px 8px;overflow:auto;height:100%;}
+  .avatar-stage{position:relative;left:auto;bottom:auto;transform:none;order:0;margin-bottom:8px;}
+  .avatar-hero{animation:none;}
+  .avatar-hero img{height:200px;}
+  .f-obj{position:relative;transform:none;left:auto !important;top:auto !important;width:30%;min-width:96px;order:1;}
+  .f-inner{animation:none;}
+  .room-folders{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;width:100%;order:1;}
+  .plate{width:84px;height:84px;}
+  .desc-panel{flex-wrap:wrap;gap:10px;padding:12px 16px;}
+  .win{width:94%;max-height:84%;}
+  .proj-grid{grid-template-columns:1fr;}
+  .about-grid{grid-template-columns:1fr;}
+}
+@media(max-width:440px){
+  .f-obj{width:44%;}
+  .avatar-hero img{height:168px;}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-orbs"><span></span><span></span><span></span></div>
+
+<main class="browser" role="application" aria-label="가상 작업실 포트폴리오 브라우저">
+
+  <!-- TOP CHROME BAR -->
+  <div class="top-bar">
+    <div class="traffic" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+    <div class="nav-btns">
+      <button aria-label="뒤로 가기">‹</button>
+      <button aria-label="앞으로 가기">›</button>
+      <button aria-label="새로고침">⟲</button>
+    </div>
+    <div class="url-bar">
+      <span class="lock" aria-hidden="true">🔒</span>
+      <span class="addr">star.browser / virtual-studio</span>
+      <span class="blink">online</span>
+    </div>
+  </div>
+  <div class="tab-row" aria-hidden="true">
+    <div class="tab"><span class="dot"></span>virtual-studio</div>
+    <div class="tab" style="opacity:.6"><span class="dot" style="background:var(--sky)"></span>moodboard</div>
+  </div>
+
+  <!-- VIEWPORT = VIRTUAL ROOM -->
+  <div class="viewport">
+
+    <!-- subtle virtual-studio ambience -->
+    <div class="studio-bg" aria-hidden="true">
+      <span class="grid"></span>
+      <span class="panel p1"></span>
+      <span class="panel p2"></span>
+      <span class="hl h1"></span>
+      <span class="hl h2"></span>
+      <span class="cd c1"></span>
+      <span class="cd c2"></span>
+      <span class="floor"></span>
+    </div>
+
+    <section class="room" id="room" aria-label="가상 작업실">
+
+      <!-- floating folder objects injected here -->
+      <div class="room-folders" id="folders"></div>
+
+      <!-- CENTRAL CHARACTER -->
+      <div class="avatar-stage" aria-live="polite">
+        <div class="speech" id="speech">브라우저 속 작은 작업실에 오신 걸 환영해요.</div>
+        <div class="avatar-hero" aria-label="안내 캐릭터 아바타">
+          <img id="avatarImg" src="assets/avatar-idle.webp" alt="검은 머리의 차분한 디자이너 아바타"
+               onerror="this.style.display='none';document.getElementById('avatarPh').style.display='block';" />
+          <div class="avatar-ph" id="avatarPh">
+            <div class="ph-hair"></div>
+            <div class="ph-side l"></div>
+            <div class="ph-side r"></div>
+            <div class="ph-face"></div>
+            <div class="ph-bang"></div>
+            <div class="ph-body"></div>
+            <div class="ph-tablet"></div>
+          </div>
+          <div class="avatar-floor"></div>
+        </div>
+        <div class="avatar-tag">guide · <b id="avatarState">idle</b></div>
+      </div>
+
+    </section>
+
+    <!-- POPUP WINDOW LAYER -->
+    <div class="win-layer">
+      <div class="scrim" id="scrim"></div>
+      <div class="win" id="win" role="dialog" aria-modal="true" aria-label="프로젝트 창">
+        <div class="win-bar">
+          <div class="dots">
+            <b class="c" id="winClose" role="button" aria-label="창 닫기" tabindex="0"></b>
+            <b class="m" id="winMin" role="button" aria-label="창 최소화" tabindex="0"></b>
+            <b class="x" id="winMax" role="button" aria-label="창 확대" tabindex="0"></b>
+          </div>
+          <div class="wt"><span class="fav"></span><span id="winTitle">folder</span></div>
+        </div>
+        <div class="win-body" id="winBody"></div>
+
+        <!-- DETAIL slide-over -->
+        <div class="detail" id="detail">
+          <div class="detail-bar">
+            <button id="detailBack" aria-label="목록으로 돌아가기">‹ 목록</button>
+            <div class="wt" style="font-size:12px;color:var(--gray)">project detail</div>
+          </div>
+          <div class="detail-body" id="detailBody"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /viewport -->
+
+  <!-- BOTTOM STATUS / DESCRIPTION PANEL -->
+  <div class="desc-panel" id="descPanel">
+    <span class="status-pill"><span class="live"></span> studio is live</span>
+    <span class="tag" id="descTag">hover</span>
+    <span class="txt" id="descTxt">폴더 오브젝트 위에 마우스를 올리면 이곳에 설명이 나타나요.</span>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div class="loader" id="loader">
+    <div class="mini-ava">
+      <img src="assets/avatar-loading.webp" alt="" onerror="this.style.display='none'" />
+    </div>
+    <div class="bar"><i></i></div>
+    <div class="lt">작업실을 불러오는 중…</div>
+  </div>
+
+</main>
+
+<script>
+/* ============================================================
+   DATA
+============================================================ */
+const FOLDERS = {
+  about:{ name:"About", file:"About.folder", motif:"m-device", accent:"lav", label:".folder", pos:{left:'22%',top:'40%'}, dur:'6.2s', delay:'0s', rot:'-3deg', meta:"who / mood",
+    desc:"이곳에는 <strong>나라는 디자이너</strong>가 어떤 시선으로 일하는지 담아뒀어요.",
+    speech:"먼저 저를 소개할게요. 차분하게, 그러나 빠르게 움직여요." },
+  works:{ name:"Works", file:"Works.folder", motif:"m-disc", accent:"chrome", label:".disc", pos:{left:'33%',top:'17%'}, dur:'5.6s', delay:'-1.2s', rot:'4deg', meta:"selected",
+    desc:"<strong>대표 작업들</strong>을 골라 모아둔 공간이에요.",
+    speech:"이곳에는 내가 설계한 경험들이 모여 있어요." },
+  uiux:{ name:"UI / UX", file:"UIUX.folder", motif:"m-win", accent:"lav", label:".app", pos:{left:'50%',top:'12%'}, dur:'6.6s', delay:'-2.4s', rot:'-2deg', meta:"product",
+    desc:"화면과 흐름을 <strong>설계한 UI·UX</strong> 작업들이에요.",
+    speech:"화면 뒤의 흐름까지 함께 봐주세요." },
+  ecommerce:{ name:"E-commerce", file:"E-commerce.folder", motif:"m-bag", accent:"pink", label:".bag", pos:{left:'79%',top:'38%'}, dur:'5.9s', delay:'-0.6s', rot:'3deg', meta:"shop",
+    desc:"사고 싶게 만드는 <strong>커머스 경험</strong>을 모았어요.",
+    speech:"쇼핑이 즐거워지는 화면을 좋아해요." },
+  branding:{ name:"Branding", file:"Branding.folder", motif:"m-gem", accent:"chrome", label:".case", pos:{left:'67%',top:'17%'}, dur:'6.0s', delay:'-3.1s', rot:'-4deg', meta:"identity",
+    desc:"무드와 톤을 잡은 <strong>브랜딩</strong> 작업이에요.",
+    speech:"브랜드의 공기를 만드는 일이 좋아요." },
+  photo:{ name:"Photo / Video", file:"PhotoVideo.folder", motif:"m-cam", accent:"sky", label:".cam", pos:{left:'23%',top:'69%'}, dur:'5.7s', delay:'-1.8s', rot:'4deg', meta:"visual",
+    desc:"빛과 장면을 기록한 <strong>사진·영상</strong>이에요.",
+    speech:"순간을 오래 보고 싶어서 찍어둬요." },
+  archive:{ name:"Archive", file:"Archive.folder", motif:"m-tape", accent:"chrome", label:".archive", pos:{left:'77%',top:'67%'}, dur:'6.4s', delay:'-2.0s', rot:'-3deg', meta:"keepsake",
+    desc:"<strong>기록과 취향</strong>은 여기 보관해뒀어요.",
+    speech:"기록과 취향은 여기 보관해뒀어요." },
+  contact:{ name:"Contact", file:"Contact.folder", motif:"m-mail", accent:"pink", label:".mail", pos:{left:'30%',top:'84%'}, dur:'5.8s', delay:'-0.9s', rot:'3deg', meta:"say hi",
+    desc:"함께 일하고 싶다면 <strong>여기로 인사</strong>해주세요.",
+    speech:"메시지를 남겨주시면 천천히, 정확히 답할게요." }
+};
+
+const PROJECTS = {
+  about:[],
+  works:[
+    {t:"My Star Calendar",s:"감성 캘린더 앱",badge:"app",thumb:"cd",
+     tags:["iOS","Product","2024"],
+     body:"하루의 기분과 일정을 별처럼 모아두는 캘린더 앱. 차분한 색과 절제된 모션으로 매일 열고 싶은 인터페이스를 설계했어요."},
+    {t:"SMTOWN Store Redesign",s:"커머스 리디자인",badge:"shop",thumb:"bag",
+     tags:["E-commerce","UI","Redesign"],
+     body:"팬을 위한 굿즈 스토어를 크롬·실버 톤으로 재해석. 탐색과 결제의 마찰을 줄이고 브랜드의 무드를 화면 전체로 확장했어요."},
+    {t:"Naver Redesign",s:"포털 UI 실험",badge:"web",thumb:"tab2",
+     tags:["UX","Concept","Web"],
+     body:"익숙한 포털을 더 가볍고 개인적인 브라우저 경험으로 재구성한 컨셉 작업."},
+  ],
+  uiux:[
+    {t:"My Star Calendar",s:"플로우 설계",badge:"flow",thumb:"cd",
+     tags:["IA","Prototype"],
+     body:"온보딩부터 기록까지의 흐름을 도식화하고, 손이 머무는 지점을 줄였어요."},
+    {t:"Naver Redesign",s:"브라우저 탭형 UI",badge:"ui",thumb:"tab2",
+     tags:["Web","Interaction"],
+     body:"탭과 카드 중심으로 정보를 다시 묶어 가벼운 탐색 경험을 만들었어요."},
+  ],
+  ecommerce:[
+    {t:"SMTOWN Store Redesign",s:"쇼핑백 카드형",badge:"shop",thumb:"bag",
+     tags:["Commerce","Brand"],
+     body:"장바구니까지의 동선을 단순화하고, 굿즈가 주인공이 되도록 화면을 비웠어요."},
+    {t:"Cosmetic AI Site",s:"반투명 케이스 무드",badge:"ai",thumb:"cos",
+     tags:["AI","Beauty","Web"],
+     body:"피부 톤 추천을 돕는 AI 코스메틱 사이트. 투명 플라스틱 질감으로 청결하고 가벼운 인상을 줬어요."},
+  ],
+  branding:[
+    {t:"Cosmetic AI Site",s:"비주얼 아이덴티티",badge:"identity",thumb:"cos",
+     tags:["Brand","Visual"],
+     body:"라벤더와 실버를 축으로 한 톤·로고·패키지 무드를 정리했어요."},
+    {t:"My Star Calendar",s:"앱 아이덴티티",badge:"identity",thumb:"cd",
+     tags:["Logo","Motion"],
+     body:"별과 캘린더를 잇는 심볼과 부드러운 모션 언어를 만들었어요."},
+  ],
+  photo:[
+    {t:"Quiet Frames",s:"정물·빛 기록",badge:"photo",thumb:"doc",
+     tags:["Photo","Series"],
+     body:"오후의 빛과 사물을 차분히 담은 개인 사진 시리즈."},
+    {t:"Loop Tape",s:"무드 영상",badge:"video",thumb:"tape",
+     tags:["Video","Edit"],
+     body:"카세트처럼 반복해 보고 싶은 짧은 무드 영상 모음."},
+  ],
+  archive:[
+    {t:"Nintendo / Game Site",s:"게임팩 카드",badge:"play",thumb:"game",
+     tags:["Fun","Pixel"],
+     body:"좋아하는 게임의 무드를 픽셀·카트리지로 재현한 개인 아카이브."},
+    {t:"Mixtape Notes",s:"취향 기록",badge:"note",thumb:"tape",
+     tags:["Music","Diary"],
+     body:"플레이리스트와 메모를 카세트 카드로 모아둔 취향 노트."},
+    {t:"Moodboard",s:"레퍼런스",badge:"ref",thumb:"doc",
+     tags:["Reference"],
+     body:"레트로 디지털·투명 플라스틱·크롬 무드의 레퍼런스 보관함."},
+  ],
+  contact:[]
+};
+
+/* ============================================================
+   BUILD FLOATING FOLDER OBJECTS
+============================================================ */
+const folders = document.getElementById('folders');
+Object.entries(FOLDERS).forEach(([key,f])=>{
+  const b=document.createElement('button');
+  b.className='f-obj';
+  b.setAttribute('aria-label', f.name+' 폴더 열기');
+  b.dataset.folder=key;
+  b.style.left=f.pos.left;
+  b.style.top=f.pos.top;
+  b.style.setProperty('--dur', f.dur);
+  b.style.setProperty('--delay', f.delay);
+  b.style.setProperty('--rot', f.rot);
+  b.innerHTML=`
+    <div class="f-inner">
+      <div class="plate ${f.accent}">
+        <div class="motif ${f.motif}"><i></i></div>
+      </div>
+      <span class="f-meta">${f.label}</span>
+    </div>
+    <span class="f-name">${f.name}</span>`;
+  b.addEventListener('mouseenter',()=>setDesc(key));
+  b.addEventListener('focus',()=>setDesc(key));
+  b.addEventListener('click',()=>openFolder(key));
+  folders.appendChild(b);
+});
+
+/* ============================================================
+   DESCRIPTION PANEL + SPEECH + AVATAR STATE
+============================================================ */
+const descTag=document.getElementById('descTag');
+const descTxt=document.getElementById('descTxt');
+const speech=document.getElementById('speech');
+const avatarState=document.getElementById('avatarState');
+const avatarImg=document.getElementById('avatarImg');
+
+function setDesc(key){
+  const f=FOLDERS[key];
+  descTag.textContent=f.meta;
+  descTxt.innerHTML=f.desc;
+}
+function setSpeech(text){
+  speech.style.animation='none';
+  void speech.offsetWidth; // reflow to restart animation
+  speech.style.animation='';
+  speech.textContent=text;
+}
+function setAvatar(state){
+  avatarState.textContent=state;
+  if(avatarImg.style.display!=='none'){
+    avatarImg.src='assets/avatar-'+state+'.webp';
+  }
+}
+
+/* ============================================================
+   WINDOW OPEN / CLOSE / MIN / MAX
+============================================================ */
+const scrim=document.getElementById('scrim');
+const win=document.getElementById('win');
+const winTitle=document.getElementById('winTitle');
+const winBody=document.getElementById('winBody');
+const detail=document.getElementById('detail');
+const detailBody=document.getElementById('detailBody');
+
+function openFolder(key){
+  const f=FOLDERS[key];
+  // highlight the active folder object
+  document.querySelectorAll('.f-obj').forEach(b=>b.classList.toggle('active',b.dataset.folder===key));
+  setDesc(key);
+  setSpeech(f.speech);
+  setAvatar('guide');
+
+  winTitle.textContent=f.file;
+  detail.classList.remove('show');
+  winBody.innerHTML=renderBody(key);
+  winBody.querySelectorAll('.card').forEach(c=>{
+    c.addEventListener('click',()=>openDetail(key,parseInt(c.dataset.i)));
+  });
+  const form=winBody.querySelector('#contactForm');
+  if(form) form.addEventListener('submit',e=>{e.preventDefault();setSpeech("메시지 고마워요. 천천히, 정확히 답할게요.");e.target.reset();});
+
+  scrim.classList.add('show');
+  win.classList.remove('min','max');
+  win.classList.add('open');
+}
+
+function renderBody(key){
+  if(key==='about') return aboutHTML();
+  if(key==='contact') return contactHTML();
+  const list=PROJECTS[key]||[];
+  const cards=list.map((p,i)=>`
+    <button class="card" data-i="${i}" aria-label="${p.t} 상세 보기">
+      <div class="thumb ${p.thumb}">
+        <span class="badge">${p.badge}</span>
+        ${thumbInner(p.thumb)}
+      </div>
+      <div class="info"><span class="t">${p.t}</span><span class="s">${p.s}</span></div>
+    </button>`).join('');
+  return `<p class="win-intro">${FOLDERS[key].desc} 카드를 누르면 자세히 볼 수 있어요.</p>
+          <div class="proj-grid">${cards}</div>`;
+}
+function thumbInner(type){
+  const map={cd:'<div class="disc"></div>',tape:'<div class="deck"></div>',bag:'<div class="b"></div>',
+    tab2:'<div class="win-mini"></div>',cos:'<div class="bottle"></div>',game:'<div class="cart"></div>',doc:'<div class="pg"></div>'};
+  return map[type]||'';
+}
+
+function aboutHTML(){
+  return `<p class="win-intro">${FOLDERS.about.desc}</p>
+    <div class="about-grid">
+      <div class="about-card"><h4>WHO</h4><p>차분한 시선으로 화면을 설계하는 디자이너예요. 새로운 도구를 일찍 들여다보고, 결과는 조용하고 단단하게 만들어요.</p></div>
+      <div class="about-card"><h4>MOOD</h4><p>레트로 디지털, 투명 플라스틱, 실버 크롬. 가볍지만 비어 보이지 않는 톤을 좋아해요.</p>
+        <div class="chips2"><span>calm</span><span>early-adopter</span><span>retro digital</span></div></div>
+      <div class="about-card"><h4>WORK</h4><p>UI·UX · 커머스 · 브랜딩 · 사진/영상까지, 경험의 결을 일관되게 잇는 일을 해요.</p></div>
+      <div class="about-card"><h4>TOOLS</h4><p>화면부터 코드까지 직접 만지며 다듬어요.</p>
+        <div class="chips2"><span>Figma</span><span>Web</span><span>Motion</span><span>Photo</span></div></div>
+    </div>`;
+}
+function contactHTML(){
+  return `<p class="win-intro">${FOLDERS.contact.desc}</p>
+    <form class="contact-box" id="contactForm">
+      <div class="field"><label for="cn">이름</label><input id="cn" required placeholder="이름을 알려주세요" /></div>
+      <div class="field"><label for="ce">이메일</label><input id="ce" type="email" required placeholder="you@email.com" /></div>
+      <div class="field"><label for="cm">메시지</label><textarea id="cm" rows="3" required placeholder="짧아도 좋아요."></textarea></div>
+      <button class="send" type="submit">메시지 보내기 ✦</button>
+      <div class="contact-links">
+        <a href="mailto:kkm450815@gmail.com">Email</a>
+        <a href="#" onclick="return false">Instagram</a>
+        <a href="#" onclick="return false">Behance</a>
+      </div>
+    </form>`;
+}
+
+/* DETAIL PANEL */
+function openDetail(key,i){
+  const p=PROJECTS[key][i];
+  setSpeech(`"${p.t}" — ${p.s} 이야기를 들려드릴게요.`);
+  detailBody.innerHTML=`
+    <div class="detail-hero thumb ${p.thumb}" style="height:150px">${thumbInner(p.thumb)}</div>
+    <h3>${p.t}</h3>
+    <div class="sub">${p.s}</div>
+    <div class="meta-row">${p.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+    <p>${p.body}</p>
+    <p style="color:var(--gray);font-size:12px">실제 이미지·상세 케이스 스터디는 이 영역에 이어 붙일 수 있어요.</p>`;
+  detail.classList.add('show');
+}
+document.getElementById('detailBack').addEventListener('click',()=>{detail.classList.remove('show');setAvatar('guide');});
+
+/* window controls */
+function closeWin(){
+  win.classList.remove('open','max');
+  scrim.classList.remove('show');
+  setAvatar('idle');
+  setSpeech("또 다른 폴더도 열어볼까요?");
+  document.querySelectorAll('.f-obj').forEach(b=>b.classList.remove('active'));
+}
+document.getElementById('winClose').addEventListener('click',closeWin);
+document.getElementById('winMin').addEventListener('click',()=>{win.classList.add('min');win.classList.remove('open');setTimeout(()=>{scrim.classList.remove('show');},220);setAvatar('idle');});
+document.getElementById('winMax').addEventListener('click',()=>win.classList.toggle('max'));
+document.getElementById('winClose').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')closeWin();});
+scrim.addEventListener('click',closeWin);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&win.classList.contains('open'))closeWin();});
+
+/* ============================================================
+   LOADER (avatar 'loading' state)
+============================================================ */
+const loader=document.getElementById('loader');
+setAvatar('loading');
+window.addEventListener('load',()=>{
+  setTimeout(()=>{loader.classList.add('hide');setAvatar('idle');},900);
+});
+</script>
+</body>
+</html>
