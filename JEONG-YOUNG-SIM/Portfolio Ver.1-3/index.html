@@ -146,7 +146,8 @@ body{
   width:100%;max-width:1320px;height:100%;margin:0 auto;
 }
 /* LEFT — character (sits slightly left of centre, ~40%) */
-.stage-left{flex:0 0 auto;position:relative;display:flex;align-items:stretch;justify-content:center;}
+.stage-left{flex:0 0 auto;position:relative;display:flex;align-items:stretch;justify-content:center;
+  width:clamp(300px,28vw,380px);} /* fixed width so swapping avatar pose doesn't shift the icon grid */
 /* RIGHT — tidy folder grid, vertically centred */
 .stage-right{flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
 .room-folders{
@@ -224,6 +225,7 @@ body{
    81vh = browser height; ~300px reserved for the 3 chrome bars + speech + label */
 .avatar-hero img#avatarImg{
   width:auto;height:auto;display:block;
+  max-width:100%;
   max-height:min(58vh, calc(84vh - 250px));
   object-fit:contain;
   /* soft cast shadow that reads naturally on a cut-out PNG/WebP */
