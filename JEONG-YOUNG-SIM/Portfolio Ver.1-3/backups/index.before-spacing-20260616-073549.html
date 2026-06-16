@@ -77,9 +77,8 @@ body{
 ============================================================ */
 .browser{
   position:relative;z-index:1;
-  width:min(92vw,1560px);
-  aspect-ratio:16/9;            /* typical browser window ratio */
-  max-height:88vh;
+  width:min(80vw,1420px);
+  height:min(81vh,1000px);
   background:linear-gradient(180deg,var(--chrome-1),#eceef3);
   border-radius:22px;
   box-shadow:var(--shadow-pop), inset 0 1px 0 rgba(255,255,255,.9);
@@ -141,9 +140,9 @@ body{
   padding:18px 32px 12px;}
 /* inner wrapper keeps character + folders grouped together (full stage height) */
 .room-inner{
-  display:flex;align-items:center;justify-content:space-evenly;
-  gap:clamp(40px,4vw,72px);
-  width:100%;max-width:1320px;height:100%;margin:0 auto;
+  display:flex;align-items:stretch;justify-content:space-between;
+  gap:clamp(72px,8vw,112px);
+  width:100%;max-width:1060px;height:100%;margin:0 auto;
 }
 /* LEFT — character (sits slightly left of centre, ~40%) */
 .stage-left{flex:0 0 auto;position:relative;display:flex;align-items:stretch;justify-content:center;}
@@ -153,7 +152,6 @@ body{
   display:grid;grid-template-columns:repeat(3,1fr);
   gap:20px 12px;justify-items:center;align-content:center;
   width:100%;max-width:348px;
-  zoom:1.16; /* scale the whole icon grid up to match the larger frame */
 }
 
 /* ============================================================
@@ -176,7 +174,9 @@ body{
 /* soft studio floor plane + standing shadow band */
 .studio-bg .floor{position:absolute;left:0;right:0;bottom:0;height:34%;
   background:linear-gradient(180deg,transparent,rgba(205,196,240,.16) 60%,rgba(180,176,210,.22));}
-/* removed stray floor shadow band (.floor::after) — overlapped oddly beside the character */
+.studio-bg .floor::after{content:"";position:absolute;left:40%;bottom:6%;transform:translateX(-50%);
+  width:26%;height:30px;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(70,64,104,.18),transparent 75%);filter:blur(5px);}
 /* blurred panel shadows drifting */
 .studio-bg .panel{position:absolute;border-radius:22px;filter:blur(16px);opacity:.26;}
 .studio-bg .p1{left:6%;top:20%;width:200px;height:150px;background:linear-gradient(160deg,rgba(255,255,255,.5),rgba(205,196,240,.18));}
@@ -201,14 +201,14 @@ body{
 .avatar-stage{
   position:relative;z-index:4;height:100%;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  pointer-events:none;transform:translateY(18px);
+  pointer-events:none;transform:translateY(-22px);
 }
 /* speech bubble attached above the character */
 .speech{
   pointer-events:auto;
   max-width:260px;background:#fff;border:1px solid var(--silver);
   border-radius:18px;padding:12px 16px;font-size:13px;color:var(--ink-soft);line-height:1.5;
-  box-shadow:var(--shadow-soft);position:relative;margin-bottom:18px;text-align:center;
+  box-shadow:var(--shadow-soft);position:relative;margin-bottom:-4px;text-align:center;
   animation:popIn .35s ease;
 }
 .speech::after{content:"";position:absolute;bottom:-7px;left:50%;transform:translateX(-50%) rotate(45deg);width:14px;height:14px;background:#fff;border-right:1px solid var(--silver);border-bottom:1px solid var(--silver);}
@@ -224,7 +224,7 @@ body{
    81vh = browser height; ~300px reserved for the 3 chrome bars + speech + label */
 .avatar-hero img#avatarImg{
   width:auto;height:auto;display:block;
-  max-height:min(58vh, calc(84vh - 250px));
+  max-height:min(50vh, calc(81vh - 300px));
   object-fit:contain;
   /* soft cast shadow that reads naturally on a cut-out PNG/WebP */
   filter:drop-shadow(0 20px 22px rgba(50,42,80,.26)) contrast(1.05) saturate(1.03);
@@ -244,7 +244,6 @@ body{
 /* soft elliptical ground shadow under the character */
 .avatar-floor{
   width:200px;height:26px;margin-top:8px;border-radius:50%;
-  transform:translateX(20px); /* nudge shadow right to sit under the feet */
   background:radial-gradient(closest-side,rgba(70,64,104,.28),rgba(70,64,104,.10) 55%,transparent 78%);
   filter:blur(4px);
 }
@@ -253,7 +252,6 @@ body{
 
 /* faint central preview of the hovered / selected folder (thin, translucent) */
 .preview{
-  display:none; /* central preview hidden — same info shows in the bottom desc panel */
   position:absolute;left:57%;top:50%;transform:translate(-50%,-50%);
   z-index:2;pointer-events:none;width:178px;text-align:center;
   padding:15px 16px;border-radius:16px;
@@ -459,7 +457,7 @@ body{
 .scrim.show{opacity:1;pointer-events:auto;}
 .win{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) scale(.94);
-  width:min(640px,86%);height:auto;max-height:80%;
+  width:min(640px,86%);max-height:80%;
   background:linear-gradient(180deg,var(--chrome-1),#eef0f5);
   border-radius:18px;border:1px solid var(--glass-line);
   box-shadow:var(--shadow-pop);
@@ -467,7 +465,6 @@ body{
   display:flex;flex-direction:column;overflow:hidden;
 }
 .win.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
-/* detail window height is fit to its content via JS (openDetail), capped by max-height */
 .win.min{transform:translate(-50%,140%) scale(.9);opacity:0;pointer-events:none;}
 .win.max{width:94%;max-height:90%;}
 .win-bar{
@@ -482,7 +479,7 @@ body{
 .win-bar .dots .x{background:linear-gradient(180deg,#bfeac0,#8fce9a);}
 .win-bar .wt{font-size:12px;color:var(--ink-soft);font-weight:600;display:flex;align-items:center;gap:7px;}
 .win-bar .wt .fav{width:14px;height:14px;border-radius:4px;background:linear-gradient(160deg,#e3dcf8,var(--lavender-deep));}
-.win-body{padding:20px;overflow:auto;flex:1;min-height:0;}
+.win-body{padding:20px;overflow:auto;}
 .win-intro{font-size:12px;color:var(--gray);margin-bottom:16px;line-height:1.5;}
 
 /* project cards grid */
@@ -547,7 +544,7 @@ body{
 .detail-bar{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--silver);background:linear-gradient(180deg,#f7f8fb,#e7e9f0);}
 .detail-bar button{border:none;background:rgba(255,255,255,.7);border-radius:9px;padding:6px 12px;font-size:12px;color:var(--ink-soft);cursor:pointer;box-shadow:inset 0 0 0 1px var(--silver);}
 .detail-bar button:hover{background:#fff;}
-.detail-body{padding:22px;overflow:auto;flex:1;min-height:0;}
+.detail-body{padding:22px;overflow:auto;}
 .detail-hero{height:150px;border-radius:14px;margin-bottom:18px;position:relative;overflow:hidden;}
 .detail-body h3{font-size:18px;color:var(--ink);margin-bottom:4px;}
 .detail-body .sub{font-size:12px;color:var(--lavender-deep);margin-bottom:16px;}
@@ -630,62 +627,7 @@ body{
   .room-folders{grid-template-columns:repeat(3,1fr);}
   .avatar-hero img#avatarImg{height:clamp(190px,28vh,250px);}
   .plate{width:78px;height:78px;}
-  .mood-grid{grid-template-columns:repeat(2,1fr);}
 }
-
-/* ============================================================
-   MOODBOARD VIEW (second browser tab)
-============================================================ */
-.tab{cursor:pointer;font-family:inherit;transition:opacity .18s, background .18s;}
-.tab.inactive{opacity:.55;}
-.tab:hover{opacity:1;}
-
-.moodboard{position:absolute;inset:0;z-index:3;overflow:auto;
-  padding:30px clamp(22px,5vw,60px) 40px;}
-.mood-head{max-width:1100px;margin:0 auto 22px;}
-.mood-head .mh-tag{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--lavender-deep);margin-bottom:8px;}
-.mood-head h2{font-size:25px;color:var(--ink);margin-bottom:6px;}
-.mood-head p{font-size:13px;color:var(--gray);line-height:1.6;max-width:560px;}
-
-.mood-grid{max-width:1100px;margin:0 auto;display:grid;
-  grid-template-columns:repeat(4,1fr);grid-auto-rows:148px;gap:16px;}
-.mtile{border-radius:18px;padding:18px;position:relative;overflow:hidden;
-  border:1px solid var(--glass-line);box-shadow:var(--shadow-soft);
-  background:rgba(255,255,255,.55);backdrop-filter:blur(8px);
-  display:flex;flex-direction:column;}
-.mtile .cap{margin-top:auto;font-size:11px;color:var(--ink-soft);}
-.mtile .cap b{font-weight:600;display:block;font-size:13px;margin-bottom:2px;}
-.span2{grid-column:span 2;}
-.row2{grid-row:span 2;}
-
-/* reference image tiles — replace the gradient background with a real <img> later */
-.mtile.ref{justify-content:flex-end;color:#fff;}
-.mtile.ref .cap{color:#fff;}
-.ref.r1{background:linear-gradient(150deg,#cdc4f0,#a99ee0 90%);}
-.ref.r2{background:linear-gradient(150deg,#f3cdda,#e9a9c2 90%);}
-.ref.r3{background:linear-gradient(150deg,#bfe0f2,#8fc6e8 90%);}
-.ref.r4{background:linear-gradient(150deg,#f4efe4,#e4dbc8 90%);color:var(--ink-soft);}
-.ref.r4 .cap{color:var(--ink-soft);}
-
-/* palette tile */
-.mtile.palette{justify-content:space-between;}
-.swatches{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;}
-.sw{width:42px;height:42px;border-radius:11px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
-
-/* keyword chips */
-.kw{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-.kw span{font-size:11px;padding:6px 12px;border-radius:20px;
-  background:rgba(255,255,255,.72);border:1px solid var(--silver);color:var(--ink-soft);}
-
-/* typography tile */
-.mtile.type .big{font-size:50px;font-weight:700;color:var(--ink);line-height:1;}
-.mtile.type .tline{font-size:12px;color:var(--gray);margin-top:6px;}
-
-/* hide bottom desc panel while on the moodboard */
-.browser.mood-active .desc-panel{display:none;}
-
-/* ensure [hidden] wins over the views' own display rules */
-.room[hidden],.moodboard[hidden]{display:none;}
 </style>
 </head>
 <body>
@@ -708,9 +650,9 @@ body{
       <span class="blink">online</span>
     </div>
   </div>
-  <div class="tab-row">
-    <button class="tab" id="tabStudio"><span class="dot"></span>virtual-studio</button>
-    <button class="tab inactive" id="tabMood"><span class="dot" style="background:var(--sky)"></span>moodboard</button>
+  <div class="tab-row" aria-hidden="true">
+    <div class="tab"><span class="dot"></span>virtual-studio</div>
+    <div class="tab" style="opacity:.6"><span class="dot" style="background:var(--sky)"></span>moodboard</div>
   </div>
 
   <!-- VIEWPORT = VIRTUAL ROOM -->
@@ -747,6 +689,7 @@ body{
             </div>
             <div class="avatar-floor"></div>
           </div>
+          <div class="avatar-tag">guide · <b id="avatarState">idle</b></div>
         </div>
       </div>
 
@@ -762,36 +705,6 @@ body{
         <div class="pv-tag" id="pvTag">preview</div>
         <div class="pv-name" id="pvName">virtual studio</div>
         <div class="pv-desc" id="pvDesc">오른쪽 폴더에 마우스를 올리면<br>이곳에 미리보기가 떠요.</div>
-      </div>
-    </section>
-
-    <!-- MOODBOARD VIEW (second tab) -->
-    <section class="moodboard" id="moodboard" aria-label="무드보드" hidden>
-      <div class="mood-head">
-        <div class="mh-tag">studio mood</div>
-        <h2>이 작업실의 분위기</h2>
-        <p>차분한 빛, 부드러운 유리질감, 파스텔 톤. 제가 작업을 만들 때 기준으로 삼는 색·질감·키워드를 모아둔 무드보드예요.</p>
-      </div>
-      <div class="mood-grid">
-        <div class="mtile ref r1 span2 row2"><div class="cap"><b>Soft window light</b>창으로 스며드는 은은한 빛</div></div>
-        <div class="mtile palette span2">
-          <div class="cap"><b>Palette</b>중심은 화이트·실버, 포인트는 라벤더·핑크·스카이</div>
-          <div class="swatches">
-            <span class="sw" style="background:#cdc4f0"></span>
-            <span class="sw" style="background:#f3cdda"></span>
-            <span class="sw" style="background:#bfe0f2"></span>
-            <span class="sw" style="background:#f4efe4"></span>
-            <span class="sw" style="background:#33333b"></span>
-          </div>
-        </div>
-        <div class="mtile keywords span2">
-          <div class="cap"><b>Keywords</b>작업의 톤을 잡는 단어들</div>
-          <div class="kw"><span>calm</span><span>soft glass</span><span>quiet</span><span>pastel</span><span>translucent</span><span>minimal</span><span>studio light</span></div>
-        </div>
-        <div class="mtile type"><div class="big">Aa</div><div class="tline">정돈된 산세리프 · 넉넉한 여백</div></div>
-        <div class="mtile ref r2"><div class="cap"><b>Pastel & glass</b></div></div>
-        <div class="mtile ref r3"><div class="cap"><b>Calm blue hour</b></div></div>
-        <div class="mtile ref r4"><div class="cap"><b>Warm ivory paper</b></div></div>
       </div>
     </section>
 
@@ -986,7 +899,7 @@ function setSpeech(text){
 /* only these states have a real PNG; everything else falls back to idle */
 const AVATAR_SRC={idle:'assets/avatar-idle.png', guide:'assets/avatar-guide.png'};
 function setAvatar(state){
-  if(avatarState) avatarState.textContent=state;
+  avatarState.textContent=state;
   if(avatarImg.dataset.failed==='1') return;            // image missing -> keep fallback
   avatarImg.src=AVATAR_SRC[state]||AVATAR_SRC.idle;
 }
@@ -1011,7 +924,6 @@ function openFolder(key){
 
   winTitle.textContent=f.file;
   detail.classList.remove('show');
-  win.style.height='';   // list view fits its own content
   winBody.innerHTML=renderBody(key);
   winBody.querySelectorAll('.card').forEach(c=>{
     c.addEventListener('click',()=>openDetail(key,parseInt(c.dataset.i)));
@@ -1083,19 +995,12 @@ function openDetail(key,i){
     <p>${p.body}</p>
     <p style="color:var(--gray);font-size:12px">실제 이미지·상세 케이스 스터디는 이 영역에 이어 붙일 수 있어요.</p>`;
   detail.classList.add('show');
-  // size the window to the detail content (short -> compact, long -> capped + scroll)
-  requestAnimationFrame(()=>{
-    const bar=detail.querySelector('.detail-bar');
-    const h=(bar?bar.offsetHeight:46)+detailBody.scrollHeight+2;
-    win.style.height=h+'px';
-  });
 }
-document.getElementById('detailBack').addEventListener('click',()=>{detail.classList.remove('show');win.style.height='';setAvatar('guide');});
+document.getElementById('detailBack').addEventListener('click',()=>{detail.classList.remove('show');setAvatar('guide');});
 
 /* window controls */
 function closeWin(){
   win.classList.remove('open','max');
-  win.style.height='';
   scrim.classList.remove('show');
   setAvatar('idle');
   setSpeech("또 다른 폴더도 열어볼까요?");
@@ -1107,28 +1012,6 @@ document.getElementById('winMax').addEventListener('click',()=>win.classList.tog
 document.getElementById('winClose').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')closeWin();});
 scrim.addEventListener('click',closeWin);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&win.classList.contains('open'))closeWin();});
-
-/* ============================================================
-   TAB SWITCHING — virtual-studio  <->  moodboard
-============================================================ */
-const tabStudio=document.getElementById('tabStudio');
-const tabMood=document.getElementById('tabMood');
-const roomView=document.getElementById('room');
-const moodView=document.getElementById('moodboard');
-const addrEl=document.querySelector('.url-bar .addr');
-const browserEl=document.querySelector('.browser');
-function showView(v){
-  const mood=(v==='mood');
-  if(mood && win.classList.contains('open')) closeWin();
-  roomView.hidden=mood;
-  moodView.hidden=!mood;
-  tabStudio.classList.toggle('inactive',mood);
-  tabMood.classList.toggle('inactive',!mood);
-  browserEl.classList.toggle('mood-active',mood);
-  addrEl.textContent='star.browser / '+(mood?'moodboard':'virtual-studio');
-}
-tabStudio.addEventListener('click',()=>showView('studio'));
-tabMood.addEventListener('click',()=>showView('mood'));
 
 /* ============================================================
    LOADER (avatar 'loading' state)
